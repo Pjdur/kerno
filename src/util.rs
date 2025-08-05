@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 use std::env;
 use std::fs;
-use std::os::unix::fs::PermissionsExt;
-use std::path::PathBuf; // or os::windows::fs
+use std::path::{Path, PathBuf};
 
 pub fn scan_binaries() -> HashMap<String, PathBuf> {
     let mut cache = HashMap::new();
@@ -12,29 +11,16 @@ pub fn scan_binaries() -> HashMap<String, PathBuf> {
             if let Ok(entries) = fs::read_dir(path) {
                 for entry in entries.flatten() {
                     let file_path = entry.path();
-                    let name = file_path
-                        .file_name()
-                        .and_then(|n| n.to_str())
-                        .unwrap_or("")
-                        .to_string();
-                    #[cfg(unix)]
-                    let is_exec = entry
-                        .metadata()
-                        .map(|m| m.permissions().mode() & 0o111 != 0)
-                        .unwrap_or(false);
-
-                    #[cfg(windows)]
-                    let is_exec = {
-                        let ext = file_path
-                            .extension()
-                            .and_then(|e| e.to_str())
+                    if file_path.is_file() {
+                        let name = file_path
+                            .file_name()
+                            .and_then(|n| n.to_str())
                             .unwrap_or("")
-                            .to_lowercase();
-                        matches!(ext.as_str(), "exe" | "bat" | "cmd")
-                    };
+                            .to_string();
 
-                    if file_path.is_file() && is_exec {
-                        cache.insert(name, file_path);
+                        if is_executable(&file_path) {
+                            cache.insert(name, file_path);
+                        }
                     }
                 }
             }
@@ -42,4 +28,31 @@ pub fn scan_binaries() -> HashMap<String, PathBuf> {
     }
 
     cache
+}
+
+// Cross-platform check: is the file executable?
+fn is_executable(path: &Path) -> bool {
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::PermissionsExt;
+        if let Ok(metadata) = fs::metadata(path) {
+            let mode = metadata.permissions().mode();
+            return mode & 0o111 != 0;
+        }
+        false
+    }
+
+    #[cfg(windows)]
+    {
+        if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
+            matches!(ext.to_lowercase().as_str(), "exe" | "bat" | "cmd")
+        } else {
+            false
+        }
+    }
+
+    #[cfg(not(any(unix, windows)))]
+    {
+        false // For unknown platforms, default to not executable
+    }
 }
