@@ -92,7 +92,8 @@ fn main() {
     }
 }
 
-fn execute_command(input: &str,
+fn execute_command(
+    input: &str,
     binary_cache: &HashMap<String, PathBuf>,
     env_vars: &mut HashMap<String, String>,
     history: &mut [String],
