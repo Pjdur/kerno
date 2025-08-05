@@ -1,0 +1,17 @@
+[package]
+name = "kerno"
+description = "A simple, cross-platform shell written in Rust"
+authors = ["Pjdur"]
+license = "MIT"
+repository = "https://github.com/Pjdur/kerno"
+homepage = "https://pjdur.github.io/kerno"
+readme = "README.md"
+keywords = ["shell", "cross-platform", "rust"]
+version = "1.0.0"
+edition = "2024"
+
+[dependencies]
+chrono = "0.4.41"
+home = "0.5.11"
+rand = "0.9.2"
+toml = "0.9.5"
