@@ -45,7 +45,7 @@ fn write_env_vars(env_vars: &HashMap<String, String>) {
             for (k, v) in env_vars {
                 let safe_value = v.replace("\"", "\\\"");
                 writeln!(writer, "{k} = \"{safe_value}\"").unwrap_or_else(|e| {
-                    eprintln!("Failed to write to kerno.toml: {}", e);
+                    eprintln!("Failed to write to kerno.toml: {e}");
                 });
             }
         }
@@ -92,7 +92,7 @@ fn main() {
     }
 }
 
-fn execute_command(input: &str, binary_cache: &HashMap<String, PathBuf>, env_vars: &mut HashMap<String, String>, history: &mut Vec<String>) {
+fn execute_command(input: &str, binary_cache: &HashMap<String, PathBuf>, env_vars: &mut HashMap<String, String>, history: &mut [String]) {
     let parts: Vec<&str> = input.split_whitespace().collect();
     if parts.is_empty() {
         return;
@@ -193,13 +193,11 @@ fn execute_command(input: &str, binary_cache: &HashMap<String, PathBuf>, env_var
         },
         "cat" if parts.len() == 2 => match File::open(parts[1]) {
             Ok(f) => {
-                for line in BufReader::new(f).lines() {
-                    if let Ok(l) = line {
-                        println!("{l}");
-                    }
+                for line in BufReader::new(f).lines().map_while(Result::ok) {
+                    println!("{line}");
                 }
             }
-            Err(e) => eprintln!("Failed to open file: {}", e),
+            Err(e) => eprintln!("Failed to open file: {e}"),
         },
         "touch" if parts.len() == 2 => {
             if let Err(e) = File::create(parts[1]) {
@@ -240,7 +238,7 @@ fn execute_command(input: &str, binary_cache: &HashMap<String, PathBuf>, env_var
         }
         "read" if parts.len() == 2 => match File::open(parts[1]) {
             Ok(f) => {
-                for line in BufReader::new(f).lines().flatten() {
+                for line in BufReader::new(f).lines().map_while(Result::ok) {
                     println!("{line}");
                 }
             }
