@@ -44,7 +44,7 @@ fn write_env_vars(env_vars: &HashMap<String, String>) {
             let mut writer = BufWriter::new(f);
             for (k, v) in env_vars {
                 let safe_value = v.replace("\"", "\\\"");
-                writeln!(writer, "{} = \"{}\"", k, safe_value).unwrap_or_else(|e| {
+                writeln!(writer, "{k} = \"{safe_value}\"").unwrap_or_else(|e| {
                     eprintln!("Failed to write to kerno.toml: {}", e);
                 });
             }
@@ -56,7 +56,7 @@ fn main() {
     // Set default working directory to home before loop starts
     if let Some(home) = home_dir() {
         if let Err(e) = env::set_current_dir(&home) {
-            eprintln!("Failed to set default directory: {}", e);
+            eprintln!("Failed to set default directory: {e}");
         }
     }
 
@@ -143,7 +143,7 @@ fn execute_command(input: &str, binary_cache: &HashMap<String, PathBuf>, env_var
                 executables.sort();
                 executables.dedup();
                 for exe in executables {
-                    println!("{}", exe);
+                    println!("{exe}");
                 }
             } else {
                 eprintln!("No PATH variable found.");
@@ -153,7 +153,7 @@ fn execute_command(input: &str, binary_cache: &HashMap<String, PathBuf>, env_var
             env_vars.insert(parts[1].to_string(), parts[2..].join(" "));
         }
         "get" if parts.len() == 2 => match env_vars.get(parts[1]) {
-            Some(val) => println!("{}", val),
+            Some(val) => println!("{val}"),
             None => println!("Variable not found"),
         },
         "unset" if parts.len() == 2 => {
@@ -161,43 +161,41 @@ fn execute_command(input: &str, binary_cache: &HashMap<String, PathBuf>, env_var
         }
         "env" => {
             for (k, v) in env_vars.iter() {
-                println!("{}={}", k, v);
+                println!("{k}={v}");
             }
         }
         "cd" if parts.len() == 2 => {
             if let Err(e) = env::set_current_dir(parts[1]) {
-                eprintln!("cd failed: {}", e);
+                eprintln!("cd failed: {e}");
             }
         }
         "pwd" => match env::current_dir() {
             Ok(path) => println!("{}", path.display()),
-            Err(e) => eprintln!("Error: {}", e),
+            Err(e) => eprintln!("Error: {e}"),
         },
         "version" => {
-            println!("kerno v{}", VERSION);
+            println!("kerno v{VERSION}");
         }
         "shellinfo" | "about" => {
-            println!("kerno v{}", VERSION);
-            println!("Author: {}", AUTHOR);
+            println!("kerno v{VERSION}");
+            println!("Author: {AUTHOR}");
             println!("Written in Rust 🦀");
             println!("Cross-platform, lightweight and lightning fast.");
         }
 
         "ls" => match fs::read_dir(env::current_dir().unwrap_or_default()) {
             Ok(entries) => {
-                for entry in entries {
-                    if let Ok(e) = entry {
-                        println!("{}", e.path().display());
-                    }
+                for entry in entries.flatten() {
+                    println!("{}", entry.path().display());
                 }
             }
-            Err(e) => eprintln!("ls failed: {}", e),
+            Err(e) => eprintln!("ls failed: {e}"),
         },
         "cat" if parts.len() == 2 => match File::open(parts[1]) {
             Ok(f) => {
                 for line in BufReader::new(f).lines() {
                     if let Ok(l) = line {
-                        println!("{}", l);
+                        println!("{l}");
                     }
                 }
             }
@@ -205,27 +203,27 @@ fn execute_command(input: &str, binary_cache: &HashMap<String, PathBuf>, env_var
         },
         "touch" if parts.len() == 2 => {
             if let Err(e) = File::create(parts[1]) {
-                eprintln!("touch failed: {}", e);
+                eprintln!("touch failed: {e}",);
             }
         }
         "rm" | "del" if parts.len() == 2 => {
             if let Err(e) = fs::remove_file(parts[1]) {
-                eprintln!("File delete failed: {}", e);
+                eprintln!("File delete failed: {e}");
             }
         }
         "mkdir" if parts.len() == 2 => {
             if let Err(e) = fs::create_dir(parts[1]) {
-                eprintln!("mkdir failed: {}", e);
+                eprintln!("mkdir failed: {e}");
             }
         }
         "rmdir" if parts.len() == 2 => {
             if let Err(e) = fs::remove_dir(parts[1]) {
-                eprintln!("rmdir failed: {}", e);
+                eprintln!("rmdir failed: {e}");
             }
         }
         "date" => {
             let now = chrono::Local::now();
-            println!("{}", now);
+            println!("{now}");
         }
         "clear" | "cls" => {
             print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
@@ -233,8 +231,8 @@ fn execute_command(input: &str, binary_cache: &HashMap<String, PathBuf>, env_var
         "write" if parts.len() >= 3 => {
             let content = parts[2..].join(" ");
             if let Ok(mut f) = File::create(parts[1]) {
-                if let Err(e) = writeln!(f, "{}", content) {
-                    eprintln!("write failed: {}", e);
+                if let Err(e) = writeln!(f, "{content}") {
+                    eprintln!("write failed: {e}");
                 }
             } else {
                 eprintln!("Failed to open file for writing");
@@ -242,13 +240,11 @@ fn execute_command(input: &str, binary_cache: &HashMap<String, PathBuf>, env_var
         }
         "read" if parts.len() == 2 => match File::open(parts[1]) {
             Ok(f) => {
-                for line in BufReader::new(f).lines() {
-                    if let Ok(l) = line {
-                        println!("{}", l);
-                    }
+                for line in BufReader::new(f).lines().flatten() {
+                    println!("{line}");
                 }
             }
-            Err(e) => eprintln!("Failed to read file: {}", e),
+            Err(e) => eprintln!("Failed to read file: {e}"),
         },
         "exit" => {
             std::process::exit(0);
@@ -274,10 +270,10 @@ fn execute_command(input: &str, binary_cache: &HashMap<String, PathBuf>, env_var
                     .spawn()
                     .and_then(|mut child| child.wait())
                 {
-                    eprintln!("Error: {}", e);
+                    eprintln!("Error: {e}");
                 }
             } else {
-                eprintln!("Unknown command: {}", cmd);
+                eprintln!("Unknown command: {cmd}");
             }
         }
     }

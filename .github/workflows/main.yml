@@ -7,13 +7,13 @@ on:
     branches: [ main ]
 
 jobs:
-  build:
+  build-linux:
+    name: Build on Linux
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout source
         uses: actions/checkout@v3
-
+      
       - name: Install Rust
         uses: actions-rs/toolchain@v1
         with:
@@ -22,14 +22,35 @@ jobs:
           override: true
           components: rustfmt, clippy
 
-      - name: Run clippy linter
+      - name: Run Clippy linter
         run: cargo clippy -- -D warnings
-
+      
       - name: Format check
         run: cargo fmt --check
 
-      - name: 📦 Build release
+      - name: Build release (Linux)
         run: cargo build --release
 
-      - name: 📦 Build release for Windows
-        run: cargo build --release --target x86_64-pc-windows-gnu
+  build-windows:
+    name: Build on Windows
+    runs-on: windows-latest
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v3
+      
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          profile: minimal
+          override: true
+          components: rustfmt, clippy
+
+      - name: Run Clippy linter
+        run: cargo clippy -- -D warnings
+      
+      - name: Format check
+        run: cargo fmt --check
+
+      - name: Build release (Windows)
+        run: cargo build --release
