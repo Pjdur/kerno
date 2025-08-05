@@ -92,7 +92,11 @@ fn main() {
     }
 }
 
-fn execute_command(input: &str, binary_cache: &HashMap<String, PathBuf>, env_vars: &mut HashMap<String, String>, history: &mut [String]) {
+fn execute_command(input: &str,
+    binary_cache: &HashMap<String, PathBuf>,
+    env_vars: &mut HashMap<String, String>,
+    history: &mut [String],
+) {
     let parts: Vec<&str> = input.split_whitespace().collect();
     if parts.is_empty() {
         return;

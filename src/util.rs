@@ -13,18 +13,20 @@ pub fn scan_binaries() -> HashMap<String, PathBuf> {
                 for entry in entries.flatten() {
                     let file_path = entry.path();
                     let name = file_path
-                         .file_name()
-                         .and_then(|n| n.to_str())
-                         .unwrap_or("")
-                         .to_string();
+                        .file_name()
+                        .and_then(|n| n.to_str())
+                        .unwrap_or("")
+                        .to_string();
                     #[cfg(unix)]
-                    let is_exec = entry.metadata()
+                    let is_exec = entry
+                        .metadata()
                         .map(|m| m.permissions().mode() & 0o111 != 0)
                         .unwrap_or(false);
 
                     #[cfg(windows)]
                     let is_exec = {
-                        let ext = file_path.extension()
+                        let ext = file_path
+                            .extension()
                             .and_then(|e| e.to_str())
                             .unwrap_or("")
                             .to_lowercase();
