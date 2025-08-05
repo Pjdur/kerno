@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::env;
 use std::fs;
-use std::path::PathBuf;
-use std::os::unix::fs::PermissionsExt; // or os::windows::fs
+use std::os::unix::fs::PermissionsExt;
+use std::path::PathBuf; // or os::windows::fs
 
 pub fn scan_binaries() -> HashMap<String, PathBuf> {
     let mut cache = HashMap::new();
@@ -12,11 +12,11 @@ pub fn scan_binaries() -> HashMap<String, PathBuf> {
             if let Ok(entries) = fs::read_dir(path) {
                 for entry in entries.flatten() {
                     let file_path = entry.path();
-                    let name = file_path.file_name()
-                        .and_then(|n| n.to_str())
-                        .unwrap_or("")
-                        .to_string();
-
+                    let name = file_path
+                         .file_name()
+                         .and_then(|n| n.to_str())
+                         .unwrap_or("")
+                         .to_string();
                     #[cfg(unix)]
                     let is_exec = entry.metadata()
                         .map(|m| m.permissions().mode() & 0o111 != 0)
