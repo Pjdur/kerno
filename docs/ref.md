@@ -1,6 +1,6 @@
 ---
-title| Command Reference
-nav_order| 4
+title: Command Reference
+nav_order: 4
 ---
 
 ## Command Reference
