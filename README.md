@@ -23,7 +23,7 @@ Kerno is a minimalist command-line shell written in Rust, focused on speed, simp
 Install via Cargo:
 
 ```bash
-cargo install --path kerno
+cargo install kerno
 ```
 
 Run the shell:
