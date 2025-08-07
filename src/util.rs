@@ -3,6 +3,7 @@ use std::env;
 use std::fs;
 use std::path::{Path, PathBuf};
 
+/// Scans the system PATH for executable files and returns a map of name → path.
 pub fn scan_binaries() -> HashMap<String, PathBuf> {
     let mut cache = HashMap::new();
 
@@ -11,16 +12,10 @@ pub fn scan_binaries() -> HashMap<String, PathBuf> {
             if let Ok(entries) = fs::read_dir(path) {
                 for entry in entries.flatten() {
                     let file_path = entry.path();
-                    if file_path.is_file() {
-                        let name = file_path
-                            .file_name()
-                            .and_then(|n| n.to_str())
-                            .unwrap_or("")
-                            .to_string();
-
-                        if is_executable(&file_path) {
-                            cache.insert(name, file_path);
-                        }
+                    if file_path.is_file() && is_executable(&file_path) {
+                        let name = normalize_name(&file_path);
+                        // Avoid overwriting existing entries unless preferred
+                        cache.entry(name).or_insert(file_path);
                     }
                 }
             }
@@ -30,7 +25,7 @@ pub fn scan_binaries() -> HashMap<String, PathBuf> {
     cache
 }
 
-// Cross-platform check: is the file executable?
+/// Determines if a file is executable on the current platform.
 fn is_executable(path: &Path) -> bool {
     #[cfg(unix)]
     {
@@ -45,7 +40,10 @@ fn is_executable(path: &Path) -> bool {
     #[cfg(windows)]
     {
         if let Some(ext) = path.extension().and_then(|e| e.to_str()) {
-            matches!(ext.to_lowercase().as_str(), "exe" | "bat" | "cmd")
+            matches!(
+                ext.to_lowercase().as_str(),
+                "exe" | "bat" | "cmd" | "com" | "ps1"
+            )
         } else {
             false
         }
@@ -53,6 +51,33 @@ fn is_executable(path: &Path) -> bool {
 
     #[cfg(not(any(unix, windows)))]
     {
-        false // For unknown platforms, default to not executable
+        false
+    }
+}
+
+/// Normalizes the executable name for consistent cross-platform behavior.
+fn normalize_name(path: &Path) -> String {
+    #[cfg(windows)]
+    {
+        path.file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("")
+            .to_lowercase()
+    }
+
+    #[cfg(unix)]
+    {
+        path.file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or("")
+            .to_string()
+    }
+
+    #[cfg(not(any(unix, windows)))]
+    {
+        path.file_name()
+            .and_then(|s| s.to_str())
+            .unwrap_or("")
+            .to_string()
     }
 }
