@@ -111,10 +111,7 @@ fn execute_command(
                         for entry in entries.flatten() {
                             let file_path = entry.path();
                             if file_path.is_file() {
-                                let file_name = file_path
-                                    .file_name()
-                                    .and_then(|f| f.to_str())
-                                    .unwrap_or("");
+                                let file_name = file_path.file_name().and_then(|f| f.to_str()).unwrap_or("");
 
                                 #[cfg(unix)]
                                 let is_exec = {
