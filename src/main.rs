@@ -19,18 +19,15 @@ fn get_kerno_path() -> Option<PathBuf> {
 fn load_env_vars() -> HashMap<String, String> {
     let mut env_vars = env::vars().collect::<HashMap<String, String>>();
 
-    if let Some(path) = get_kerno_path() {
-        if path.exists() {
-            if let Ok(contents) = fs::read_to_string(&path) {
-                if let Ok(value) = contents.parse::<Value>() {
-                    if let Some(table) = value.as_table() {
-                        for (k, v) in table {
-                            if let Some(s) = v.as_str() {
-                                env_vars.insert(k.clone(), s.to_string());
-                            }
-                        }
-                    }
-                }
+    if let Some(path) = get_kerno_path()
+        && path.exists()
+        && let Ok(contents) = fs::read_to_string(&path)
+        && let Ok(value) = contents.parse::<Value>()
+        && let Some(table) = value.as_table()
+    {
+        for (k, v) in table {
+            if let Some(s) = v.as_str() {
+                env_vars.insert(k.clone(), s.to_string());
             }
         }
     }
@@ -39,25 +36,24 @@ fn load_env_vars() -> HashMap<String, String> {
 }
 
 fn write_env_vars(env_vars: &HashMap<String, String>) {
-    if let Some(path) = get_kerno_path() {
-        if let Ok(f) = File::create(&path) {
-            let mut writer = BufWriter::new(f);
-            for (k, v) in env_vars {
-                let safe_value = v.replace("\"", "\\\"");
-                writeln!(writer, "{k} = \"{safe_value}\"").unwrap_or_else(|e| {
-                    eprintln!("Failed to write to kerno.toml: {e}");
-                });
-            }
+    if let Some(path) = get_kerno_path()
+        && let Ok(f) = File::create(&path)
+    {
+        let mut writer = BufWriter::new(f);
+        for (k, v) in env_vars {
+            let safe_value = v.replace('"', "\\\"");
+            writeln!(writer, "{k} = \"{safe_value}\"").unwrap_or_else(|e| {
+                eprintln!("Failed to write to kerno.toml: {e}");
+            });
         }
     }
 }
 
 fn main() {
-    // Set default working directory to home before loop starts
-    if let Some(home) = home_dir() {
-        if let Err(e) = env::set_current_dir(&home) {
-            eprintln!("Failed to set default directory: {e}");
-        }
+    if let Some(home) = home_dir()
+        && let Err(e) = env::set_current_dir(&home)
+    {
+        eprintln!("Failed to set default directory: {e}");
     }
 
     let mut env_vars = load_env_vars();
@@ -104,9 +100,7 @@ fn execute_command(
     }
 
     match parts[0] {
-        "echo" => {
-            println!("{}", parts[1..].join(" "));
-        }
+        "echo" => println!("{}", parts[1..].join(" ")),
         "scanpath" => {
             if let Some(paths) = env::var_os("PATH") {
                 let paths = env::split_paths(&paths);
@@ -117,8 +111,11 @@ fn execute_command(
                         for entry in entries.flatten() {
                             let file_path = entry.path();
                             if file_path.is_file() {
-                                let file_name =
-                                    file_path.file_name().and_then(|f| f.to_str()).unwrap_or("");
+                                let file_name = file_path
+                                    .file_name()
+                                    .and_then(|f| f.to_str())
+                                    .unwrap_or("");
+
                                 #[cfg(unix)]
                                 let is_exec = {
                                     use std::os::unix::fs::PermissionsExt;
@@ -127,6 +124,7 @@ fn execute_command(
                                         .map(|m| m.permissions().mode() & 0o111 != 0)
                                         .unwrap_or(false)
                                 };
+
                                 #[cfg(windows)]
                                 let is_exec = {
                                     let ext = file_path
@@ -178,16 +176,13 @@ fn execute_command(
             Ok(path) => println!("{}", path.display()),
             Err(e) => eprintln!("Error: {e}"),
         },
-        "version" => {
-            println!("kerno v{VERSION}");
-        }
+        "version" => println!("kerno v{VERSION}"),
         "shellinfo" | "about" => {
             println!("kerno v{VERSION}");
             println!("Author: {AUTHOR}");
             println!("Written in Rust 🦀");
             println!("Cross-platform, lightweight and lightning fast.");
         }
-
         "ls" => match fs::read_dir(env::current_dir().unwrap_or_default()) {
             Ok(entries) => {
                 for entry in entries.flatten() {
@@ -206,7 +201,7 @@ fn execute_command(
         },
         "touch" if parts.len() == 2 => {
             if let Err(e) = File::create(parts[1]) {
-                eprintln!("touch failed: {e}",);
+                eprintln!("touch failed: {e}");
             }
         }
         "rm" | "del" if parts.len() == 2 => {
@@ -249,9 +244,7 @@ fn execute_command(
             }
             Err(e) => eprintln!("Failed to read file: {e}"),
         },
-        "exit" => {
-            std::process::exit(0);
-        }
+        "exit" => std::process::exit(0),
         "help" => {
             println!("Available commands:");
             println!(
