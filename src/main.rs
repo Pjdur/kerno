@@ -9,7 +9,7 @@ use std::process::Command;
 use toml::Value;
 use util::scan_binaries;
 
-static VERSION: &str = "1.0.0";
+static VERSION: &str = "1.0.1";
 static AUTHOR: &str = "Pjdur";
 
 fn get_kerno_path() -> Option<PathBuf> {
