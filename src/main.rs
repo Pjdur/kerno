@@ -49,6 +49,34 @@ fn write_env_vars(env_vars: &HashMap<String, String>) {
     }
 }
 
+fn substitute_env_vars(input: &str, env_vars: &HashMap<String, String>) -> String {
+    let mut result = String::new();
+    let mut chars = input.chars().peekable();
+
+    while let Some(c) = chars.next() {
+        if c == '{' {
+            let mut var_name = String::new();
+            while let Some(&next) = chars.peek() {
+                if next == '}' {
+                    chars.next(); // consume '}'
+                    break;
+                }
+                var_name.push(next);
+                chars.next();
+            }
+            if let Some(val) = env_vars.get(&var_name) {
+                result.push_str(val);
+            } else {
+                result.push_str(&format!("{{{}}}", var_name)); // leave as-is if not found
+            }
+        } else {
+            result.push(c);
+        }
+    }
+
+    result
+}
+
 fn main() {
     if let Some(home) = home_dir()
         && let Err(e) = env::set_current_dir(&home)
@@ -77,14 +105,15 @@ fn main() {
             continue;
         }
 
-        history.push(trimmed.to_string());
+        let substituted = substitute_env_vars(trimmed, &env_vars);
+        history.push(substituted.clone());
 
-        if trimmed == "exit" {
+        if substituted == "exit" {
             write_env_vars(&env_vars);
             break;
         }
 
-        execute_command(trimmed, &binary_cache, &mut env_vars, &mut history);
+        execute_command(&substituted, &binary_cache, &mut env_vars, &mut history);
     }
 }
 
@@ -235,23 +264,16 @@ fn execute_command(
             }
         }
         "read" if parts.len() == 2 => match File::open(parts[1]) {
-            Ok(f) => {
-                for line in BufReader::new(f).lines().map_while(Result::ok) {
+            Ok(file) => {
+                for line in BufReader::new(file).lines().map_while(Result::ok) {
                     println!("{line}");
                 }
             }
             Err(e) => eprintln!("Failed to read file: {e}"),
         },
-        "exit" => std::process::exit(0),
-        "help" => {
-            println!("Available commands:");
-            println!(
-                "echo, scanpath, set, get, unset, env, cd, pwd, ls, cat, touch, rm, mkdir, rmdir, date, clear, write, read, exit, help, history"
-            );
-        }
         "history" => {
             for (i, cmd) in history.iter().enumerate() {
-                println!("{}: {}", i + 1, cmd);
+                println!("{i}: {cmd}");
             }
         }
         _ => {
@@ -259,15 +281,14 @@ fn execute_command(
             let args = &parts[1..];
 
             if let Some(path) = binary_cache.get(cmd) {
-                if let Err(e) = Command::new(path)
-                    .args(args)
-                    .spawn()
-                    .and_then(|mut child| child.wait())
-                {
-                    eprintln!("Error: {e}");
+                match Command::new(path).args(args).spawn() {
+                    Ok(mut child) => {
+                        let _ = child.wait();
+                    }
+                    Err(e) => eprintln!("Failed to execute {cmd}: {e}"),
                 }
             } else {
-                eprintln!("Unknown command: {cmd}");
+                eprintln!("Command not found: {cmd}");
             }
         }
     }
