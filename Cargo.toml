@@ -7,7 +7,7 @@ repository = "https://github.com/Pjdur/kerno"
 homepage = "https://pjdur.github.io/kerno"
 readme = "README.md"
 keywords = ["shell", "cross-platform", "rust"]
-version = "1.0.1"
+version = "1.1.0"
 edition = "2024"
 
 [dependencies]
