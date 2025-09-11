@@ -9,7 +9,7 @@ use std::process::Command;
 use toml::Value;
 use util::scan_binaries;
 
-static VERSION: &str = "1.0.1";
+static VERSION: &str = "1.1.0";
 static AUTHOR: &str = "Pjdur";
 
 fn get_kerno_path() -> Option<PathBuf> {
@@ -271,6 +271,13 @@ fn execute_command(
             }
             Err(e) => eprintln!("Failed to read file: {e}"),
         },
+        "exit" => std::process::exit(0),
+        "help" => {
+            println!("Available commands:");
+            println!(
+                "echo, scanpath, set, get, unset, env, cd, pwd, ls, cat, touch, rm, mkdir, rmdir, date, clear, write, read, exit, help, history"
+            );
+        }
         "history" => {
             for (i, cmd) in history.iter().enumerate() {
                 println!("{i}: {cmd}");
